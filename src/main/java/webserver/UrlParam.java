@@ -31,4 +31,12 @@ public class UrlParam {
   public void addParam(String params) {
     this.params.putAll(HttpRequestUtils.parseQueryString(params));
   }
+
+  public String getReturnUrl() {
+    if (url.equals("/user/create")) {
+      return "/index.html";
+    } else {
+      return url;
+    }
+  }
 }

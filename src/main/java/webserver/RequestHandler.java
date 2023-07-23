@@ -38,9 +38,7 @@ public class RequestHandler extends Thread {
       // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
       BufferedReader reader = new BufferedReader(new InputStreamReader(in));
       String line;
-      String url = "";
       boolean isFirstLine = true;
-      boolean isPost = false;
       int contentLength = 0;
       UrlParam urlParam = null;
       while (!"".equals(line = reader.readLine())) {
@@ -49,11 +47,7 @@ public class RequestHandler extends Thread {
         }
         if (isFirstLine) {
           urlParam = UrlUtils.getDivideContentFromUrl(UrlUtils.getFirstLine(line));
-          url = urlParam.getUrl();
           isFirstLine = false;
-          if (urlParam.getMethod().equals("POST")) {
-            isPost = true;
-          }
         }
         int length = UrlUtils.getContentLength(line);
         if (length != NOT_CONTENT_LENGTH) {
@@ -64,7 +58,7 @@ public class RequestHandler extends Thread {
       appendBodyData(reader, contentLength, urlParam);
       User user = getUser(urlParam);
 
-      byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+      byte[] body = Files.readAllBytes(new File("./webapp" + urlParam.getReturnUrl()).toPath());
       response200Header(dos, body.length);
       responseBody(dos, body);
     } catch (IOException e) {
@@ -74,7 +68,7 @@ public class RequestHandler extends Thread {
 
   private static void appendBodyData(BufferedReader reader, int contentLength, UrlParam urlParam)
       throws IOException {
-    if(contentLength != NOT_CONTENT_LENGTH){
+    if (contentLength != NOT_CONTENT_LENGTH) {
       String body = IOUtils.readData(reader, contentLength);
       urlParam.addParam(body);
     }
