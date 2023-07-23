@@ -16,11 +16,13 @@ import java.util.Optional;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.IOUtils;
 import util.UrlUtils;
 
 public class RequestHandler extends Thread {
 
   private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
+  private static final int NOT_CONTENT_LENGTH = 0;
 
   private Socket connection;
 
@@ -38,35 +40,58 @@ public class RequestHandler extends Thread {
       String line;
       String url = "";
       boolean isFirstLine = true;
-
+      boolean isPost = false;
+      int contentLength = 0;
+      UrlParam urlParam = null;
       while (!"".equals(line = reader.readLine())) {
         if (line == null) {
           return;
         }
         if (isFirstLine) {
-          String firstLine = UrlUtils.getFirstLine(line);
-          UrlParam urlParam = UrlUtils.getDivideContentFromUrl(firstLine);
+          urlParam = UrlUtils.getDivideContentFromUrl(UrlUtils.getFirstLine(line));
           url = urlParam.getUrl();
           isFirstLine = false;
-          if (url.equals("/user/create")) {
-            User user = new User(
-                urlParam.getParams().get("userId"),
-                urlParam.getParams().get("password"),
-                urlParam.getParams().get("name"),
-                urlParam.getParams().get("email")
-            );
-            log.info("user:{}", user);
+          if (urlParam.getMethod().equals("POST")) {
+            isPost = true;
           }
         }
-
+        int length = UrlUtils.getContentLength(line);
+        if (length != NOT_CONTENT_LENGTH) {
+          contentLength = length;
+        }
       }
       DataOutputStream dos = new DataOutputStream(out);
+      appendBodyData(reader, contentLength, urlParam);
+      User user = getUser(urlParam);
+
       byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
       response200Header(dos, body.length);
       responseBody(dos, body);
     } catch (IOException e) {
       log.error(e.getMessage());
     }
+  }
+
+  private static void appendBodyData(BufferedReader reader, int contentLength, UrlParam urlParam)
+      throws IOException {
+    if(contentLength != NOT_CONTENT_LENGTH){
+      String body = IOUtils.readData(reader, contentLength);
+      urlParam.addParam(body);
+    }
+  }
+
+  private User getUser(UrlParam urlParam) {
+    if (urlParam == null && urlParam.getParams().isEmpty()) {
+      return null;
+    }
+    Map<String, String> params = urlParam.getParams();
+    return new User(
+        params.get("userId"),
+        params.get("password"),
+        params.get("name"),
+        params.get("email")
+    );
+
   }
 
   private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {

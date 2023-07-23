@@ -6,7 +6,7 @@ import webserver.UrlParam;
 
 public class UrlUtils {
 
-  public static String getFirstLine(String line) {
+  public static UrlParam getFirstLine(String line) {
     if (line.split(" ").length != 3) {
       throw new IllegalArgumentException("URL 형식이 올바르지 않습니다.");
     }
@@ -15,7 +15,7 @@ public class UrlUtils {
     String url = tokenizer.nextToken();
     String httpVersion = tokenizer.nextToken();
 
-    return url;
+    return new UrlParam(method, url);
   }
 
 
@@ -24,14 +24,33 @@ public class UrlUtils {
     return url.substring(0, index);
   }
 
-  public static UrlParam getDivideContentFromUrl(String requestUrl) {
-    int index = requestUrl.indexOf("?");
+  public static UrlParam getDivideContentFromUrl(UrlParam requestUrlParam) {
+    int index = requestUrlParam.getUrl().indexOf("?");
     if (index == -1) {
-      return new UrlParam(requestUrl);
+      return requestUrlParam;
     } else {
-      UrlParam urlParam = new UrlParam(requestUrl.substring(0, index));
-      urlParam.addParam(requestUrl.substring(index + 1));
+      String url = requestUrlParam.getUrl();
+      UrlParam urlParam = new UrlParam(requestUrlParam.getMethod(), url.substring(0, index));
+      urlParam.addParam(url.substring(index + 1));
       return urlParam;
     }
   }
+
+  public static UrlParam addPostParam(UrlParam urlParam) {
+    if(urlParam.getMethod().equals("POST")){
+
+      return urlParam;
+    }
+    return urlParam;
+  }
+
+  public static int getContentLength(String line) {
+    if(line.startsWith("Content-Length: ")){
+      String contentLength = line.split(" ")[1];
+      return Integer.parseInt(contentLength);
+    }
+    return 0;
+  }
+
+
 }

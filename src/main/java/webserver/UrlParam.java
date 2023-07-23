@@ -6,11 +6,17 @@ import util.HttpRequestUtils;
 
 public class UrlParam {
 
+  private String method;
   private String url;
   private Map<String, String> params = new HashMap<>();
 
-  public UrlParam(String url) {
+  public UrlParam(String method, String url) {
+    this.method = method;
     this.url = url;
+  }
+
+  public String getMethod() {
+    return method;
   }
 
   public String getUrl() {
@@ -23,6 +29,6 @@ public class UrlParam {
   }
 
   public void addParam(String params) {
-    this.params = HttpRequestUtils.parseQueryString(params);
+    this.params.putAll(HttpRequestUtils.parseQueryString(params));
   }
 }
