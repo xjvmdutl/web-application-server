@@ -4,18 +4,16 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 
 import java.util.Map;
-import java.util.Optional;
 import org.junit.Test;
-import webserver.UrlParam;
 
 public class UrlUtilsTest {
 
   @Test
   public void URL_읽어_오기_성공_테스트() {
     String line = "GET /index.html HTTP/1.1";
-    UrlParam urlParam = UrlUtils.getFirstLine(line);
-    assertEquals("GET", urlParam.getMethod());
-    assertEquals("/index.html", urlParam.getUrl());
+    ControllerUtil urlParam = UrlUtils.getFirstLine(line);
+    assertEquals("GET", urlParam.getRequestMethod());
+    assertEquals("/index.html", urlParam.getRequestUrl());
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -26,21 +24,21 @@ public class UrlUtilsTest {
 
   @Test
   public void Url이_있고_Param이_없는_경우() {
-    UrlParam urlParam = new UrlParam("GET", "/index.html");
-    UrlParam contentFromUrl = UrlUtils.getDivideContentFromUrl(urlParam);
-    assertEquals(contentFromUrl.getMethod(), "GET");
-    assertEquals(contentFromUrl.getUrl(), "/index.html");
+    ControllerUtil urlParam = new ControllerUtil("GET", "/index.html");
+    ControllerUtil contentFromUrl = UrlUtils.getDivideContentFromUrl(urlParam);
+    assertEquals(contentFromUrl.getRequestMethod(), "GET");
+    assertEquals(contentFromUrl.getResponseUrl(), "/index.html");
     assertEquals(contentFromUrl.getParams().size(), 0);
   }
 
   @Test
   public void Url이_있고_Param이_있는_경우() {
-    UrlParam urlParam = new UrlParam("POST",
+    ControllerUtil urlParam = new ControllerUtil("POST",
         "/user/create?userId=javajigi&password=password&name=JaeSung");
 
-    UrlParam contentFromUrl = UrlUtils.getDivideContentFromUrl(urlParam);
-    assertEquals(contentFromUrl.getMethod(), "POST");
-    assertEquals(contentFromUrl.getUrl(), "/user/create");
+    ControllerUtil contentFromUrl = UrlUtils.getDivideContentFromUrl(urlParam);
+    assertEquals(contentFromUrl.getRequestMethod(), "POST");
+    assertEquals(contentFromUrl.getRequestUrl(), "/user/create");
     Map<String, String> params = contentFromUrl.getParams();
     assertEquals(params.get("userId"), "javajigi");
     assertEquals(params.get("password"), "password");
