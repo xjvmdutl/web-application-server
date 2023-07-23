@@ -1,22 +1,37 @@
 package util;
 
+import java.util.Optional;
 import java.util.StringTokenizer;
+import webserver.UrlParam;
 
 public class UrlUtils {
 
-  private static int FIRST_LINE = 1;
-  private static int URL_LINE_LENGTH = 3;
-
-  public static String getURL(String line) {
-    StringTokenizer tokenizer = new StringTokenizer(line," ");
+  public static String getFirstLine(String line) {
+    if (line.split(" ").length != 3) {
+      throw new IllegalArgumentException("URL 형식이 올바르지 않습니다.");
+    }
+    StringTokenizer tokenizer = new StringTokenizer(line, " ");
     String method = tokenizer.nextToken();
     String url = tokenizer.nextToken();
     String httpVersion = tokenizer.nextToken();
+
     return url;
   }
 
-  public static boolean iUrlContainsLine(int lineCount, String line) {
-    String[] strs = line.split(" ");
-    return FIRST_LINE == lineCount && strs.length == URL_LINE_LENGTH;
+
+  public static String getRequestUrl(String url) {
+    int index = url.indexOf("?");
+    return url.substring(0, index);
+  }
+
+  public static UrlParam getDivideContentFromUrl(String requestUrl) {
+    int index = requestUrl.indexOf("?");
+    if (index == -1) {
+      return new UrlParam(requestUrl);
+    } else {
+      UrlParam urlParam = new UrlParam(requestUrl.substring(0, index));
+      urlParam.addParam(requestUrl.substring(index + 1));
+      return urlParam;
+    }
   }
 }

@@ -11,6 +11,9 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 import java.nio.file.Files;
+import java.util.Map;
+import java.util.Optional;
+import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.UrlUtils;
@@ -34,17 +37,29 @@ public class RequestHandler extends Thread {
       BufferedReader reader = new BufferedReader(new InputStreamReader(in));
       String line;
       String url = "";
-      int lineCount = 0;
+      boolean isFirstLine = true;
 
       while (!"".equals(line = reader.readLine())) {
         if (line == null) {
-          break;
+          return;
         }
-        if (UrlUtils.iUrlContainsLine(++lineCount, line)) {
-          url = UrlUtils.getURL(line);
+        if (isFirstLine) {
+          String firstLine = UrlUtils.getFirstLine(line);
+          UrlParam urlParam = UrlUtils.getDivideContentFromUrl(firstLine);
+          url = urlParam.getUrl();
+          isFirstLine = false;
+          if (url.equals("/user/create")) {
+            User user = new User(
+                urlParam.getParams().get("userId"),
+                urlParam.getParams().get("password"),
+                urlParam.getParams().get("name"),
+                urlParam.getParams().get("email")
+            );
+            log.info("user:{}", user);
+          }
         }
-      }
 
+      }
       DataOutputStream dos = new DataOutputStream(out);
       byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
       response200Header(dos, body.length);
