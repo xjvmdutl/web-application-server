@@ -50,6 +50,7 @@ public class RequestHandler extends Thread {
           isFirstLine = false;
         }
         UrlUtils.getRequestCookie(controllerUtil, line);
+        UrlUtils.getContentType(controllerUtil, line);
         int length = UrlUtils.getContentLength(line);
         if (length != NOT_CONTENT_LENGTH) {
           contentLength = length;
@@ -75,13 +76,12 @@ public class RequestHandler extends Thread {
   }
 
 
-
   private void httpResponseStatus(ControllerUtil controllerUtil, DataOutputStream dos,
       byte[] body) throws IOException {
-    Map<String, String > cookie = controllerUtil.getResponseCookie();
+    Map<String, String> cookie = controllerUtil.getResponseCookie();
     switch (controllerUtil.getResponseMethod()) {
       case "200": {
-        response200Header(dos, body.length, cookie);
+        response200Header(dos, body.length, cookie, controllerUtil.getResponseContentType());
         break;
       }
       case "302": {
@@ -91,10 +91,11 @@ public class RequestHandler extends Thread {
     }
   }
 
-  private void response200Header(DataOutputStream dos, int lengthOfBodyContent, Map<String, String > cookie) {
+  private void response200Header(DataOutputStream dos, int lengthOfBodyContent,
+      Map<String, String> cookie, String contentType) {
     try {
       dos.writeBytes("HTTP/1.1 200 OK \r\n");
-      dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+      dos.writeBytes("Content-Type: " + contentType + ";charset=utf-8\r\n");
       setCookie(dos, cookie);
       dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
       dos.writeBytes("\r\n");
@@ -103,8 +104,9 @@ public class RequestHandler extends Thread {
     }
   }
 
-  private static void setCookie(DataOutputStream dos, Map<String, String > cookie) throws IOException {
-    if(cookie.size() > 0){
+  private static void setCookie(DataOutputStream dos, Map<String, String> cookie)
+      throws IOException {
+    if (cookie.size() > 0) {
       StringBuilder cookieBuilder = getCookieBuilder(cookie);
       dos.writeBytes(cookieBuilder.toString());
     }
@@ -122,7 +124,8 @@ public class RequestHandler extends Thread {
     return cookieBuilder;
   }
 
-  private void response302Header(DataOutputStream dos, String redirectUrl, Map<String, String > cookie) {
+  private void response302Header(DataOutputStream dos, String redirectUrl,
+      Map<String, String> cookie) {
     try {
       dos.writeBytes("HTTP/1.1 302 Found \r\n");
       dos.writeBytes("Location: " + redirectUrl + "\r\n");

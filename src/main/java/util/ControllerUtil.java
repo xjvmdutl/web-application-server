@@ -15,12 +15,15 @@ public class ControllerUtil {
   private String requestMethod;
   private Map<String, String> requestCookie = new HashMap<>();
 
+  private String requestContentType;
+
   private Map<String, String> params = new HashMap<>();
 
   private Map<String, String> responseCookie = new HashMap<>();
   private String responseMethod;
   private String responseUrl;
 
+  private String responseContentType;
   private byte[] body;
   public ControllerUtil() {
   }
@@ -47,6 +50,7 @@ public class ControllerUtil {
   }
 
   public void matchingUrl() throws IOException {
+    responseContentType = "text/html";
     if (requestUrl.equals("/user/create")) {
       this.responseMethod = "302";
       User user = getUser();
@@ -70,6 +74,10 @@ public class ControllerUtil {
       }
       this.responseMethod = "302";
       responseUrl = "/user/login.html";
+    }else if (requestContentType.equals("text/css")){
+      this.responseUrl = this.requestUrl;
+      this.responseMethod = "200";
+      this.responseContentType = "text/css";
     }else {
       this.responseMethod = "200";
       this.responseUrl = requestUrl;
@@ -140,5 +148,17 @@ public class ControllerUtil {
 
   public String getResponseUrl() {
     return responseUrl;
+  }
+
+  public String getRequestContentType() {
+    return requestContentType;
+  }
+
+  public String getResponseContentType() {
+    return responseContentType;
+  }
+
+  public void addContentType(String contentType) {
+    this.requestContentType = contentType;
   }
 }

@@ -104,4 +104,15 @@ public class UrlUtilsTest {
     UrlUtils.getRequestCookie(controllerUtil, "Cookie: logined=true");
     assertEquals(controllerUtil.getRequestCookie().get("logined"), "true");
   }
+
+
+  @Test
+  public void RequestContentType_읽어오기() {
+    String line = "Accept: text/css,*/*;q=0.1";
+    ControllerUtil controllerUtil = new ControllerUtil();
+    UrlUtils.getContentType(controllerUtil, line);
+
+    assertEquals(controllerUtil.getRequestContentType(), "text/css");
+  }
+
 }

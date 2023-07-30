@@ -46,4 +46,13 @@ public class UrlUtils {
       controllerUtil.addRequestCookie( HttpRequestUtils.parseCookies(line.split(": ")[1]));
     }
   }
+
+  public static void getContentType(ControllerUtil controllerUtil, String line) {
+    if(line.startsWith("Accept: ")){
+      int startIdx = line.indexOf(" ");
+      int lastIdx = line.indexOf(",");
+      String contentType = lastIdx == -1 ? line.substring(startIdx+ 1): line.substring(startIdx+ 1, lastIdx);
+      controllerUtil.addContentType(contentType);
+    }
+  }
 }
