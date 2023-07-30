@@ -1,22 +1,27 @@
 package util;
 
 import db.DataBase;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import model.User;
 
 public class ControllerUtil {
-
-
-  private String requestMethod;
   private String requestUrl;
 
-  private String responseMethod;
+  private String requestMethod;
+  private Map<String, String> requestCookie = new HashMap<>();
+
   private Map<String, String> params = new HashMap<>();
 
-  private String cookie;
+  private Map<String, String> responseCookie = new HashMap<>();
+  private String responseMethod;
+  private String responseUrl;
 
-
+  private byte[] body;
   public ControllerUtil() {
   }
 
@@ -33,30 +38,58 @@ public class ControllerUtil {
     return params;
   }
 
-  public String getCookie() {
-    return cookie;
+  public Map<String, String> getResponseCookie() {
+    return responseCookie;
   }
 
   public void addParam(String params) {
     this.params.putAll(HttpRequestUtils.parseQueryString(params));
   }
 
-  public String getResponseUrl() {
+  public void matchingUrl() throws IOException {
     if (requestUrl.equals("/user/create")) {
       this.responseMethod = "302";
       User user = getUser();
       addUser(user);
-      return "/index.html";
+      responseUrl = "/index.html";
     } else if (requestUrl.equals("/user/login")) {
       this.responseMethod = "302";
       String id = params.get("userId");
       String password = params.get("password");
       boolean isLogined = isLogined(id, password);
-      setCookie(isLogined);
-      return isLogined ? "/index.html" : "/user/login_failed.html";
+      appendCookie("logined", Boolean.toString(isLogined));
+      responseUrl = isLogined ? "/index.html" : "/user/login_failed.html";
+    } else if (requestUrl.equals("/user/list")) {
+      boolean logined = Boolean.parseBoolean(requestCookie.get("logined"));
+      if(logined){
+        this.responseMethod = "200";
+        Collection<User> users = DataBase.findAll();
+        String html = appendHTML(users);
+        this.body = html.getBytes();
+        return;
+      }
+      this.responseMethod = "302";
+      responseUrl = "/user/login.html";
+    }else {
+      this.responseMethod = "200";
+      this.responseUrl = requestUrl;
     }
-    this.responseMethod = "200";
-    return requestUrl;
+    this.body = Files.readAllBytes(new File("./webapp" + this.responseUrl).toPath());
+  }
+
+  private static String appendHTML(Collection<User> users) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("<table border='1'>");
+    for (User user : users) {
+      sb.append("<tr>");
+      sb.append("<td>" + user.getUserId() + "</td>");
+      sb.append("<td>" + user.getName() + "</td>");
+      sb.append("<td>" + user.getEmail() + "</td>");
+      sb.append("</tr>");
+    }
+    sb.append("</tr>");
+    sb.append("</table>");
+    return sb.toString();
   }
 
   private User getUser() {
@@ -71,8 +104,8 @@ public class ControllerUtil {
     throw new IllegalArgumentException("잘못된 User를 입력하셨습니다.");
   }
 
-  private void setCookie(boolean isLogined) {
-    cookie = "isLogined=" + isLogined;
+  private void appendCookie(String key, String value) {
+    responseCookie.put(key, value);
   }
 
   public String getResponseMethod() {
@@ -91,5 +124,21 @@ public class ControllerUtil {
   public void addUrlAndMethod(String url, String method) {
     this.requestUrl = url;
     this.requestMethod = method;
+  }
+
+  public Map<String, String> getRequestCookie() {
+    return requestCookie;
+  }
+
+  public void addRequestCookie(Map<String, String> requestCookie) {
+    this.requestCookie = requestCookie;
+  }
+
+  public byte[] getBody() {
+    return body;
+  }
+
+  public String getResponseUrl() {
+    return responseUrl;
   }
 }

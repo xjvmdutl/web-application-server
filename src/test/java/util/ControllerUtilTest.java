@@ -3,6 +3,7 @@ package util;
 import static org.junit.Assert.assertEquals;
 
 import db.DataBase;
+import java.io.IOException;
 import javax.xml.crypto.Data;
 import model.User;
 import org.junit.Before;
@@ -20,8 +21,10 @@ public class ControllerUtilTest {
 
 
   @Test
-  public void ResponseURL_디폴트_검증_테스트() {
+  public void ResponseURL_디폴트_검증_테스트() throws IOException {
     controllerUtil.addUrlAndMethod("/index.html", "GET");
+    controllerUtil.matchingUrl();
+
     assertEquals(controllerUtil.getResponseUrl(), "/index.html");
   }
 

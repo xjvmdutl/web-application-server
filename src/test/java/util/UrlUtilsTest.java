@@ -3,6 +3,7 @@ package util;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -29,7 +30,7 @@ public class UrlUtilsTest {
   }
 
   @Test
-  public void Url이_있고_Param이_없는_경우() {
+  public void Url이_있고_Param이_없는_경우() throws IOException {
     //Given
     ControllerUtil controllerUtil = new ControllerUtil();
     Map<String, String> requests = new HashMap<>();
@@ -38,8 +39,10 @@ public class UrlUtilsTest {
 
     //when
     UrlUtils.getDivideContentFromUrl(controllerUtil, requests);
+    controllerUtil.matchingUrl();
 
     assertEquals(controllerUtil.getRequestMethod(), "GET");
+
     assertEquals(controllerUtil.getResponseUrl(), "/index.html");
     assertEquals(controllerUtil.getParams().size(), 0);
   }
@@ -93,5 +96,12 @@ public class UrlUtilsTest {
     int contentLength = UrlUtils.getContentLength(line);
 
     assertEquals(contentLength, 59);
+  }
+
+  @Test
+  public void RequestCookie_정보_읽어오기(){
+    ControllerUtil controllerUtil = new ControllerUtil();
+    UrlUtils.getRequestCookie(controllerUtil, "Cookie: logined=true");
+    assertEquals(controllerUtil.getRequestCookie().get("logined"), "true");
   }
 }

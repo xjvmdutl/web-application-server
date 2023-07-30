@@ -41,4 +41,9 @@ public class UrlUtils {
   }
 
 
+  public static void getRequestCookie(ControllerUtil controllerUtil, String line) {
+    if(line.startsWith("Cookie: ")){
+      controllerUtil.addRequestCookie( HttpRequestUtils.parseCookies(line.split(": ")[1]));
+    }
+  }
 }

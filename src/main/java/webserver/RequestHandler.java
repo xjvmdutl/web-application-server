@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 import java.nio.file.Files;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.IOUtils;
@@ -48,6 +49,7 @@ public class RequestHandler extends Thread {
           UrlUtils.getDivideContentFromUrl(controllerUtil, UrlUtils.getFirstLine(line));
           isFirstLine = false;
         }
+        UrlUtils.getRequestCookie(controllerUtil, line);
         int length = UrlUtils.getContentLength(line);
         if (length != NOT_CONTENT_LENGTH) {
           contentLength = length;
@@ -55,10 +57,9 @@ public class RequestHandler extends Thread {
       }
       DataOutputStream dos = new DataOutputStream(out);
       appendBodyData(reader, contentLength, controllerUtil);
-      byte[] body = Files.readAllBytes(
-          new File("./webapp" + controllerUtil.getResponseUrl()).toPath());
-      httpResponseStatus(controllerUtil, dos, body);
-      responseBody(dos, body);
+      controllerUtil.matchingUrl();
+      httpResponseStatus(controllerUtil, dos, controllerUtil.getBody());
+      responseBody(dos, controllerUtil.getBody());
     } catch (IOException e) {
       log.error(e.getMessage());
     }
@@ -76,8 +77,8 @@ public class RequestHandler extends Thread {
 
 
   private void httpResponseStatus(ControllerUtil controllerUtil, DataOutputStream dos,
-      byte[] body) {
-    String cookie = controllerUtil.getCookie();
+      byte[] body) throws IOException {
+    Map<String, String > cookie = controllerUtil.getResponseCookie();
     switch (controllerUtil.getResponseMethod()) {
       case "200": {
         response200Header(dos, body.length, cookie);
@@ -90,7 +91,7 @@ public class RequestHandler extends Thread {
     }
   }
 
-  private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String cookie) {
+  private void response200Header(DataOutputStream dos, int lengthOfBodyContent, Map<String, String > cookie) {
     try {
       dos.writeBytes("HTTP/1.1 200 OK \r\n");
       dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
@@ -102,13 +103,26 @@ public class RequestHandler extends Thread {
     }
   }
 
-  private static void setCookie(DataOutputStream dos, String cookie) throws IOException {
-    if(cookie != null){
-      dos.writeBytes("Set-Cookie: " + cookie);
+  private static void setCookie(DataOutputStream dos, Map<String, String > cookie) throws IOException {
+    if(cookie.size() > 0){
+      StringBuilder cookieBuilder = getCookieBuilder(cookie);
+      dos.writeBytes(cookieBuilder.toString());
     }
   }
 
-  private void response302Header(DataOutputStream dos, String redirectUrl, String cookie) {
+  private static StringBuilder getCookieBuilder(Map<String, String> cookie) {
+    StringBuilder cookieBuilder = new StringBuilder();
+    cookieBuilder.append("Set-Cookie: ");
+    for (String key : cookie.keySet()) {
+      cookieBuilder.append(key);
+      cookieBuilder.append("=");
+      cookieBuilder.append(cookie.get(key));
+      cookieBuilder.append("; ");
+    }
+    return cookieBuilder;
+  }
+
+  private void response302Header(DataOutputStream dos, String redirectUrl, Map<String, String > cookie) {
     try {
       dos.writeBytes("HTTP/1.1 302 Found \r\n");
       dos.writeBytes("Location: " + redirectUrl + "\r\n");
