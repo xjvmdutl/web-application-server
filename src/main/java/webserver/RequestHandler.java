@@ -1,5 +1,6 @@
 package webserver;
 
+import db.DataBase;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -10,8 +11,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 import java.nio.file.Files;
-import java.util.Map;
-import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.IOUtils;
@@ -23,6 +22,7 @@ public class RequestHandler extends Thread {
   private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
   private static final int NOT_CONTENT_LENGTH = 0;
 
+  private DataBase dataBase = new DataBase();
   private Socket connection;
 
   public RequestHandler(Socket connectionSocket) {
@@ -39,13 +39,13 @@ public class RequestHandler extends Thread {
       String line;
       boolean isFirstLine = true;
       int contentLength = 0;
-      ControllerUtil controllerUtil = null;
+      ControllerUtil controllerUtil = new ControllerUtil();
       while (!"".equals(line = reader.readLine())) {
         if (line == null) {
           return;
         }
         if (isFirstLine) {
-          controllerUtil = UrlUtils.getDivideContentFromUrl(UrlUtils.getFirstLine(line));
+          UrlUtils.getDivideContentFromUrl(controllerUtil, UrlUtils.getFirstLine(line));
           isFirstLine = false;
         }
         int length = UrlUtils.getContentLength(line);
@@ -55,7 +55,6 @@ public class RequestHandler extends Thread {
       }
       DataOutputStream dos = new DataOutputStream(out);
       appendBodyData(reader, contentLength, controllerUtil);
-      User user = getUser(controllerUtil);
       byte[] body = Files.readAllBytes(
           new File("./webapp" + controllerUtil.getResponseUrl()).toPath());
       httpResponseStatus(controllerUtil, dos, body);
@@ -74,38 +73,28 @@ public class RequestHandler extends Thread {
     }
   }
 
-  private User getUser(ControllerUtil urlParam) {
-    if (urlParam == null && urlParam.getParams().isEmpty()) {
-      return null;
-    }
-    Map<String, String> params = urlParam.getParams();
-    return new User(
-        params.get("userId"),
-        params.get("password"),
-        params.get("name"),
-        params.get("email")
-    );
 
-  }
 
   private void httpResponseStatus(ControllerUtil controllerUtil, DataOutputStream dos,
       byte[] body) {
+    String cookie = controllerUtil.getCookie();
     switch (controllerUtil.getResponseMethod()) {
       case "200": {
-        response200Header(dos, body.length);
+        response200Header(dos, body.length, cookie);
         break;
       }
       case "302": {
-        response302Header(dos, controllerUtil.getResponseUrl());
+        response302Header(dos, controllerUtil.getResponseUrl(), cookie);
         break;
       }
     }
   }
 
-  private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
+  private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String cookie) {
     try {
       dos.writeBytes("HTTP/1.1 200 OK \r\n");
       dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+      setCookie(dos, cookie);
       dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
       dos.writeBytes("\r\n");
     } catch (IOException e) {
@@ -113,10 +102,17 @@ public class RequestHandler extends Thread {
     }
   }
 
-  private void response302Header(DataOutputStream dos, String redirectUrl) {
+  private static void setCookie(DataOutputStream dos, String cookie) throws IOException {
+    if(cookie != null){
+      dos.writeBytes("Set-Cookie: " + cookie);
+    }
+  }
+
+  private void response302Header(DataOutputStream dos, String redirectUrl, String cookie) {
     try {
       dos.writeBytes("HTTP/1.1 302 Found \r\n");
       dos.writeBytes("Location: " + redirectUrl + "\r\n");
+      setCookie(dos, cookie);
       dos.writeBytes("\r\n");
     } catch (IOException e) {
       log.error(e.getMessage());

@@ -1,10 +1,12 @@
 package util;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 public class UrlUtils {
 
-  public static ControllerUtil getFirstLine(String line) {
+  public static Map<String, String> getFirstLine(String line) {
     if (line.split(" ").length != 3) {
       throw new IllegalArgumentException("URL 형식이 올바르지 않습니다.");
     }
@@ -12,20 +14,21 @@ public class UrlUtils {
     String method = tokenizer.nextToken();
     String url = tokenizer.nextToken();
     String httpVersion = tokenizer.nextToken();
-
-    return new ControllerUtil(method, url);
+    Map<String, String> result = new HashMap<>();
+    result.put("url", url);
+    result.put("method", method);
+    return result;
   }
 
 
-  public static ControllerUtil getDivideContentFromUrl(ControllerUtil requestUrlParam) {
-    int index = requestUrlParam.getRequestUrl().indexOf("?");
+  public static void getDivideContentFromUrl(ControllerUtil controllerUtil, Map<String, String> requestUrlParam) {
+    int index = requestUrlParam.get("url").indexOf("?");
     if (index == -1) {
-      return requestUrlParam;
+      controllerUtil.addUrlAndMethod(requestUrlParam.get("url"), requestUrlParam.get("method"));
     } else {
-      String url = requestUrlParam.getRequestUrl();
-      ControllerUtil urlParam = new ControllerUtil(requestUrlParam.getRequestMethod(), url.substring(0, index));
-      urlParam.addParam(url.substring(index + 1));
-      return urlParam;
+      String url = requestUrlParam.get("url");
+      controllerUtil.addUrlAndMethod(url.substring(0, index), requestUrlParam.get("method"));
+      controllerUtil.addParam(url.substring(index + 1));
     }
   }
 
